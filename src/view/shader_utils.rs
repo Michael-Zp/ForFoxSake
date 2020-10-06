@@ -61,3 +61,11 @@ pub fn link_program(context: &WebGl2RenderingContext, vert_shader: &WebGlShader,
         )
     }
 }
+
+pub fn set_uniform1f(context: &WebGl2RenderingContext, program: &WebGlProgram, data: f32, name: &str) -> Result<(), String>
+{
+    context.use_program(Some(program));
+    let loc = context.get_uniform_location(program, name).ok_or(format!("Failed to get location of {}", name))?;
+    context.uniform1f(Some(&loc), data);
+    Ok(())
+}

@@ -1,5 +1,4 @@
 //This file represents the interface between the wasm and the js
-
 mod utils;
 mod for_fox_sake;
 mod model;
@@ -7,10 +6,7 @@ mod view;
 
 use wasm_bindgen::JsCast;
 use wasm_bindgen::prelude::*;
-use web_sys::{WebGl2RenderingContext, FileReader, Blob};
-
-use std::fs::File;
-use std::io::prelude::*;
+use web_sys::{WebGl2RenderingContext};
 
 use image;
 
@@ -40,11 +36,6 @@ pub struct FoxGame
 
 extern crate web_sys;
 
-macro_rules! log {
-    ( $( $t:tt )* ) => {
-        web_sys::console::log_1(&format!( $( $t )* ).into());
-    }
-}
 
 #[wasm_bindgen]
 impl FoxGame

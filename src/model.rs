@@ -1,21 +1,24 @@
-mod stuff;
+pub mod level;
 
 pub struct Model 
 {
-    map: stuff::Map,
+    
 }
 
 impl Model
 {
     pub fn new() -> Result<Model, String>
     {
-        Ok(Model{
-            map: stuff::Map{ }
-        })
+        Ok(Model{ })
     }
 
-    pub fn test_interface(&self)
+    pub fn get_level(&self, level_code: u8) -> Result<level::Level, String>
     {
-        stuff::test_impl();
+        match level_code
+        {
+            0 => Ok(level::LEVEL0),
+            _ => Err(format!("Level not found")),
+        }
+
     }
 }
