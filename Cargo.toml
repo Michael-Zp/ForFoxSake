@@ -11,6 +11,7 @@ crate-type = ["cdylib", "rlib"]
 default = ["console_error_panic_hook"]
 
 [dependencies]
+image = "*"
 js-sys = "0.3.45"
 wasm-bindgen = "0.2.63"
 lazy_static = "1.4.0"
@@ -38,13 +39,18 @@ opt-level = "s"
 [dependencies.web-sys]
 version = "0.3.4"
 features = [
+    'console',
     'Document',
     'Element',
     'HtmlCanvasElement',
     'WebGlBuffer',
-    'WebGlRenderingContext',
+    'WebGl2RenderingContext',
     'WebGlProgram',
     'WebGlShader',
+    'WebGlTexture',
+    'WebGlVertexArrayObject',
+    'FileReader',
+    'Blob',
     'Window',
     'WebGlUniformLocation',
 ]

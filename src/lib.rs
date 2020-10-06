@@ -5,7 +5,14 @@ mod for_fox_sake;
 mod model;
 mod view;
 
+use wasm_bindgen::JsCast;
 use wasm_bindgen::prelude::*;
+use web_sys::{WebGl2RenderingContext, FileReader, Blob};
+
+use std::fs::File;
+use std::io::prelude::*;
+
+use image;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -26,11 +33,46 @@ pub fn greet()
 }
 
 #[wasm_bindgen]
-pub fn startGame() -> Result<(), JsValue> 
+pub struct FoxGame
 {
-    let a = for_fox_sake::ForFoxSake::new()?;
+    game: for_fox_sake::ForFoxSake,
+}
 
-    a.test_interface();
+extern crate web_sys;
 
-    Ok(())
+macro_rules! log {
+    ( $( $t:tt )* ) => {
+        web_sys::console::log_1(&format!( $( $t )* ).into());
+    }
+}
+
+#[wasm_bindgen]
+impl FoxGame
+{
+    pub fn new(canvas_id: String, tile_map_raw_data: std::vec::Vec<u8>) -> Result<FoxGame, JsValue>
+    {
+        utils::set_panic_hook();
+
+        let document = web_sys::window().unwrap().document().unwrap();
+        let canvas = document.get_element_by_id(&canvas_id).unwrap();
+        let canvas: web_sys::HtmlCanvasElement = canvas.dyn_into::<web_sys::HtmlCanvasElement>()?;
+    
+        let context = canvas
+            .get_context("webgl2")?
+            .unwrap()
+            .dyn_into::<WebGl2RenderingContext>()?;
+    
+        let tile_map = image::load_from_memory_with_format(&tile_map_raw_data, image::ImageFormat::Bmp).unwrap().to_rgba();
+        let game = for_fox_sake::ForFoxSake::new(context, tile_map)?;
+
+
+        Ok(FoxGame {
+            game: game,
+        })
+    }
+
+    pub fn draw(&self) 
+    {
+        self.game.draw();
+    }
 }
