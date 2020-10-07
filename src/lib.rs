@@ -62,8 +62,23 @@ impl FoxGame
         })
     }
 
+    pub fn update(&mut self, delta_time: i32)
+    {
+        self.game.update(delta_time);
+    }
+
     pub fn draw(&self) 
     {
         self.game.draw();
+    }
+
+    pub fn key_down(&mut self, key_code: i32)
+    {
+        self.game.key_down(key_code);
+    }
+
+    pub fn key_up(&mut self, key_code: i32)
+    {
+        self.game.key_up(key_code);
     }
 }

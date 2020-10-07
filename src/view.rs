@@ -58,8 +58,6 @@ impl View
     {
         {
             context.use_program(Some(&self.background_shader));
-            // let map = vec![ 1.0, 1.0, 1.0, 1.0, 1.0,  1.0, 0.0, 1.0, 0.0, 1.0,  1.0, 1.0, 2.0, 1.0, 1.0,  1.0, 0.0, 1.0, 0.0, 1.0,  1.0, 1.0, 3.0, 1.0, 1.0 ];
-            // let map = vec![ 2, 2, 2, 2, 2,  1, 0, 1, 0, 1,  1, 1, 2, 1, 1,  1, 0, 1, 0, 1,  1, 1, 3, 1, 1 ];
             let loc = context.get_uniform_location(&self.background_shader, "map").ok_or("Failed to get location of map")?;
             context.uniform1iv_with_i32_array(Some(&loc), &map);
         }
