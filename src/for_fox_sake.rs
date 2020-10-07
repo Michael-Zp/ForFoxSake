@@ -19,10 +19,10 @@ pub struct ForFoxSake
 
 impl ForFoxSake 
 {
-    pub fn new(context: WebGl2RenderingContext, tile_map: image::RgbaImage) -> Result<ForFoxSake, String>
+    pub fn new(context: WebGl2RenderingContext, tile_map: image::RgbaImage, player_texture: image::RgbaImage) -> Result<ForFoxSake, String>
     {
         let model = Model::new()?;
-        let view = View::new(&context, tile_map)?;
+        let view = View::new(&context, tile_map, player_texture)?;
 
         let level = model.get_level(0)?;
         view.update_map(&context, level.get_data().to_vec(), level.get_width() as f32, level.get_height() as f32)?;
@@ -37,10 +37,11 @@ impl ForFoxSake
         })
     }
 
-    pub fn update(&mut self, delta_time: i32)
+    pub fn update(&mut self, delta_time: f32)
     {
         let read_only_input = ReadOnlyInput::new(&self.input);
-        self.model.update(read_only_input);
+        self.model.update(read_only_input, delta_time);
+        self.view.update(&self.context, self.model.to_view_model());
         self.input.finalize();
     }
 

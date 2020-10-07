@@ -1,16 +1,27 @@
 use crate::for_fox_sake::read_only_input::ReadOnlyInput;
+use crate::view_model::ViewModel;
+use cgmath;
 pub mod level;
 
 pub struct Model 
 {
-    
+    player_pos: cgmath::Vector2<f32>,
 }
 
 impl Model
 {
     pub fn new() -> Result<Model, String>
     {
-        Ok(Model{ })
+        Ok(Model{ 
+            player_pos: cgmath::Vector2 { x: 0.0, y: 0.0 } 
+        })
+    }
+
+    pub fn to_view_model(&self) -> ViewModel
+    {
+        ViewModel {
+            player_pos: self.player_pos,
+        }
     }
 
     pub fn get_level(&self, level_code: u8) -> Result<level::Level, String>
@@ -22,12 +33,28 @@ impl Model
         }
     }
 
-    pub fn update(&self, input: ReadOnlyInput)
+    pub fn update(&mut self, input: ReadOnlyInput, delta_time: f32)
     {
-        // web_sys::console::log_1(&format!("Update").into());
+        const speed: f32 = 0.2;
+
         if input.is_input_down(&format!("MoveLeft")) || input.is_input_pressed(&format!("MoveLeft"))
         {
-            web_sys::console::log_1(&format!("Char should move left").into());
+            self.player_pos.x -= speed * delta_time;
+        }
+        
+        if input.is_input_down(&format!("MoveRight")) || input.is_input_pressed(&format!("MoveRight"))
+        {
+            self.player_pos.x += speed * delta_time;
+        }
+
+        if input.is_input_down(&format!("MoveDown")) || input.is_input_pressed(&format!("MoveDown"))
+        {
+            self.player_pos.y -= speed * delta_time;
+        }
+
+        if input.is_input_down(&format!("MoveUp")) || input.is_input_pressed(&format!("MoveUp"))
+        {
+            self.player_pos.y += speed * delta_time;
         }
     }
 }
