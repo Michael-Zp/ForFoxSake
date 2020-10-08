@@ -9,7 +9,7 @@ use image;
 
 use web_sys::{WebGl2RenderingContext};
 
-pub struct ForFoxSake 
+pub struct ForFoxSake
 {
     model: Model,
     view: View,
@@ -17,15 +17,15 @@ pub struct ForFoxSake
     input: Input,
 }
 
-impl ForFoxSake 
+impl ForFoxSake
 {
     pub fn new(context: WebGl2RenderingContext, tile_map: image::RgbaImage, sprite_tile_map: image::RgbaImage) -> Result<ForFoxSake, String>
     {
-        let model = Model::new()?;
+        let mut model = Model::new()?;
         let view = View::new(&context, tile_map, sprite_tile_map)?;
 
-        let level = model.get_level(0)?;
-        view.update_map(&context, level.get_data().to_vec(), level.get_width() as f32, level.get_height() as f32)?;
+        let level = model.load_level(0)?;
+        view.update_map(&context, level)?;
 
         let input = Input::new();
 
@@ -41,7 +41,7 @@ impl ForFoxSake
     {
         let read_only_input = ReadOnlyInput::new(&self.input);
         self.model.update(read_only_input, delta_time);
-        match self.view.update(&self.context, self.model.to_view_model())
+        match self.view.update(&self.context, self.model.to_sprites_view_model())
         {
             Ok(_) => (),
             Err(err_msg) => panic!(err_msg),

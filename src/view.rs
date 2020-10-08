@@ -2,7 +2,7 @@ mod shader_utils;
 mod background_helper;
 mod sprites_helper;
 
-use crate::view_model::ViewModel;
+use crate::view_models::{SpritesViewModel, LevelViewModel};
 
 use image;
 use cgmath;
@@ -91,14 +91,15 @@ impl View
         context.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
     }
 
-    pub fn update_map(&self, context: &WebGl2RenderingContext, map: std::vec::Vec<i32>, width: f32, height: f32) -> Result<(), String>
+    pub fn update_map(&self, context: &WebGl2RenderingContext, new_map: LevelViewModel) -> Result<(), String>
     {
+
         context.use_program(Some(&self.background_shader));
         let loc = context.get_uniform_location(&self.background_shader, "map").ok_or("Failed to get location of map")?;
-        context.uniform1iv_with_i32_array(Some(&loc), &map);
+        context.uniform1iv_with_i32_array(Some(&loc), &new_map.data);
 
-        shader_utils::set_uniform1f(context, &self.background_shader, width, "width")?;
-        shader_utils::set_uniform1f(context, &self.background_shader, height, "height")?;
+        shader_utils::set_uniform1f(context, &self.background_shader, new_map.width, "width")?;
+        shader_utils::set_uniform1f(context, &self.background_shader, new_map.height, "height")?;
 
         Ok(())
     }
@@ -112,7 +113,7 @@ impl View
         Ok(())
     }
 
-    pub fn update(&mut self, context: &WebGl2RenderingContext, view_model: ViewModel) -> Result<(), String>
+    pub fn update(&mut self, context: &WebGl2RenderingContext, view_model: SpritesViewModel) -> Result<(), String>
     {
         self.update_sprites(context, view_model.sprite_sizes, view_model.sprite_positions, view_model.sprite_tile_map_indices, view_model.sprite_count)?;
         Ok(())

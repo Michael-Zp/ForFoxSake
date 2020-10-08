@@ -3,7 +3,7 @@ mod utils;
 mod for_fox_sake;
 mod model;
 mod view;
-mod view_model;
+mod view_models;
 
 use wasm_bindgen::JsCast;
 use wasm_bindgen::prelude::*;
