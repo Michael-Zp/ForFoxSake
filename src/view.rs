@@ -1,6 +1,6 @@
 mod shader_utils;
 mod background_helper;
-mod player_helper;
+mod sprites_helper;
 
 use crate::view_model::ViewModel;
 
@@ -15,18 +15,17 @@ pub struct View
     background_triangle_count: i32,
     background_tile_texture: WebGlTexture,
 
-    player_shader: WebGlProgram,
-    player_vao: WebGlVertexArrayObject,
-    player_triangle_count: i32,
-    player_texture: WebGlTexture,
+    sprite_shader: WebGlProgram,
+    sprite_texture: WebGlTexture,
+    sprite_count: i32,
 }
 
 impl View
 {
-    pub fn new(context: &WebGl2RenderingContext, tile_map: image::RgbaImage, player_texture: image::RgbaImage) -> Result<View, String>
+    pub fn new(context: &WebGl2RenderingContext, tile_map: image::RgbaImage, sprite_tile_map: image::RgbaImage) -> Result<View, String>
     {
         let background = View::init_background(context, tile_map)?;
-        let player = View::init_player(context, player_texture)?;
+        let sprites = View::init_sprite_renderer(context, sprite_tile_map)?;
         
         Ok(View{
             background_shader: background.0,
@@ -34,10 +33,9 @@ impl View
             background_triangle_count: background.2,
             background_tile_texture: background.3,
 
-            player_shader: player.0,
-            player_vao: player.1,
-            player_triangle_count: player.2,
-            player_texture: player.3,
+            sprite_shader: sprites.0,
+            sprite_texture: sprites.1,
+            sprite_count: 0,
         })
     }
 
@@ -51,13 +49,13 @@ impl View
         Ok((program, screen_filling_quad.1, screen_filling_quad.0 as i32, tex))
     }
 
-    fn init_player(context: &WebGl2RenderingContext, texture_image: image::RgbaImage) -> Result<(WebGlProgram, WebGlVertexArrayObject, i32, WebGlTexture), String>
+    fn init_sprite_renderer(context: &WebGl2RenderingContext, texture_image: image::RgbaImage) -> Result<(WebGlProgram, WebGlTexture), String>
     {
-        let program = player_helper::initialize_player_shader(&context)?;
-        let quad = shader_utils::initialize_quad_with_uvs(&context, &program, cgmath::Vector2 { x: 0.0, y: 0.0 }, cgmath::Vector2 { x: 0.2, y: 0.2 })?;
+        let program = sprites_helper::initialize_sprites_shader(&context)?;
         let tex = shader_utils::initialize_texture(context, texture_image, &program, true)?;
+        sprites_helper::set_tile_map_uniforms(context, &program, 2.0, 2.0)?;
 
-        Ok((program, quad.1, quad.0 as i32, tex))
+        Ok((program, tex))
     }
     
     fn render_background(&self, context: &WebGl2RenderingContext)
@@ -73,18 +71,17 @@ impl View
         );
     }
 
-    fn render_player(&self, context: &WebGl2RenderingContext)
+    fn render_sprites(&self, context: &WebGl2RenderingContext)
     {
-        context.use_program(Some(&self.player_shader));
+        context.use_program(Some(&self.sprite_shader));
         context.enable(WebGl2RenderingContext::BLEND);
         context.blend_func(WebGl2RenderingContext::SRC_ALPHA, WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA);
-        context.bind_vertex_array(Some(&self.player_vao));
-        context.bind_texture(WebGl2RenderingContext::TEXTURE_2D, Some(&self.player_texture));
+        context.bind_texture(WebGl2RenderingContext::TEXTURE_2D, Some(&self.sprite_texture));
 
         context.draw_arrays(
             WebGl2RenderingContext::TRIANGLES,
             0,
-            self.player_triangle_count,
+            self.sprite_count * 6,
         );
     }
 
@@ -106,20 +103,25 @@ impl View
         Ok(())
     }
 
-    pub fn update_player(&self, context: &WebGl2RenderingContext, new_position: cgmath::Vector2<f32>)
+    pub fn update_sprites(&mut self, context: &WebGl2RenderingContext, new_sizes: [cgmath::Vector2<f32>;10], new_positions: [cgmath::Vector2<f32>;10], new_tile_map_indices: [i32;10], sprite_count: i32) -> Result<(), String>
     {
-        player_helper::update_player_pos(context, &self.player_shader, new_position);
+        sprites_helper::update_sprite_sizes(context, &self.sprite_shader, new_sizes)?;
+        sprites_helper::update_sprite_positions(context, &self.sprite_shader, new_positions)?;
+        sprites_helper::update_sprite_tile_map_indices(context, &self.sprite_shader, new_tile_map_indices)?;
+        self.sprite_count = sprite_count;
+        Ok(())
     }
 
-    pub fn update(&self, context: &WebGl2RenderingContext, view_model: ViewModel)
+    pub fn update(&mut self, context: &WebGl2RenderingContext, view_model: ViewModel) -> Result<(), String>
     {
-        self.update_player(context, view_model.player_pos);
+        self.update_sprites(context, view_model.sprite_sizes, view_model.sprite_positions, view_model.sprite_tile_map_indices, view_model.sprite_count)?;
+        Ok(())
     }
 
     pub fn draw(&self, context: &WebGl2RenderingContext)
     {
         self.clear_screen(context);
         self.render_background(context);
-        self.render_player(context);
+        self.render_sprites(context);
     }
 }

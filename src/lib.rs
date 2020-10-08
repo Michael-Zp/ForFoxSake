@@ -41,7 +41,7 @@ extern crate web_sys;
 #[wasm_bindgen]
 impl FoxGame
 {
-    pub fn new(canvas_id: String, tile_map_raw_data: std::vec::Vec<u8>, player_texture_raw_data: std::vec::Vec<u8>) -> Result<FoxGame, JsValue>
+    pub fn new(canvas_id: String, tile_map_raw_data: std::vec::Vec<u8>, sprite_tile_map_raw_data: std::vec::Vec<u8>) -> Result<FoxGame, JsValue>
     {
         utils::set_panic_hook();
 
@@ -55,8 +55,8 @@ impl FoxGame
             .dyn_into::<WebGl2RenderingContext>()?;
     
         let tile_map = image::load_from_memory_with_format(&tile_map_raw_data, image::ImageFormat::Bmp).unwrap().to_rgba();
-        let player_texture = image::load_from_memory_with_format(&player_texture_raw_data, image::ImageFormat::Bmp).unwrap().to_rgba();
-        let game = for_fox_sake::ForFoxSake::new(context, tile_map, player_texture)?;
+        let sprite_tile_map = image::load_from_memory_with_format(&sprite_tile_map_raw_data, image::ImageFormat::Bmp).unwrap().to_rgba();
+        let game = for_fox_sake::ForFoxSake::new(context, tile_map, sprite_tile_map)?;
 
 
         Ok(FoxGame {

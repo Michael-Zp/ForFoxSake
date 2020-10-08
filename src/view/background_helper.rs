@@ -1,6 +1,6 @@
 use crate::view::shader_utils;
 
-use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlVertexArrayObject};
+use web_sys::{WebGl2RenderingContext, WebGlProgram};
 
 pub fn initialize_background_shader(context: &WebGl2RenderingContext) -> Result<WebGlProgram, String> 
 {

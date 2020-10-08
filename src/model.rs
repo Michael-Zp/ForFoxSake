@@ -19,8 +19,26 @@ impl Model
 
     pub fn to_view_model(&self) -> ViewModel
     {
+        let mut sprite_sizes: [cgmath::Vector2<f32>;10] = [cgmath::Vector2{ x: 0.0, y: 0.0 };10];
+        sprite_sizes[0] = cgmath::Vector2{ x: 0.2, y: 0.2 };
+        sprite_sizes[1] = cgmath::Vector2{ x: 0.2, y: 0.2 };
+        sprite_sizes[2] = cgmath::Vector2{ x: 0.2, y: 0.2 };
+        
+        let mut sprite_positions: [cgmath::Vector2<f32>;10] = [cgmath::Vector2{ x: 0.0, y: 0.0 };10];
+        sprite_positions[0] = cgmath::Vector2{ x: -0.5, y: 0.0 };
+        sprite_positions[1] = cgmath::Vector2{ x: -0.5, y: 0.0 };
+        sprite_positions[2] = self.player_pos;
+        
+        let mut sprite_tile_map_indices: [i32;10] = [0;10];
+        sprite_tile_map_indices[0] = 1;
+        sprite_tile_map_indices[1] = 2;
+        sprite_tile_map_indices[2] = 0;
+
         ViewModel {
-            player_pos: self.player_pos,
+            sprite_sizes: sprite_sizes,
+            sprite_positions: sprite_positions,
+            sprite_tile_map_indices: sprite_tile_map_indices,
+            sprite_count: 3,
         }
     }
 
@@ -35,26 +53,26 @@ impl Model
 
     pub fn update(&mut self, input: ReadOnlyInput, delta_time: f32)
     {
-        const speed: f32 = 0.2;
+        const SPEED: f32 = 0.2;
 
         if input.is_input_down(&format!("MoveLeft")) || input.is_input_pressed(&format!("MoveLeft"))
         {
-            self.player_pos.x -= speed * delta_time;
+            self.player_pos.x -= SPEED * delta_time;
         }
         
         if input.is_input_down(&format!("MoveRight")) || input.is_input_pressed(&format!("MoveRight"))
         {
-            self.player_pos.x += speed * delta_time;
+            self.player_pos.x += SPEED * delta_time;
         }
 
         if input.is_input_down(&format!("MoveDown")) || input.is_input_pressed(&format!("MoveDown"))
         {
-            self.player_pos.y -= speed * delta_time;
+            self.player_pos.y -= SPEED * delta_time;
         }
 
         if input.is_input_down(&format!("MoveUp")) || input.is_input_pressed(&format!("MoveUp"))
         {
-            self.player_pos.y += speed * delta_time;
+            self.player_pos.y += SPEED * delta_time;
         }
     }
 }
