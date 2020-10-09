@@ -51,8 +51,8 @@ impl Levels
                 vec![ 1, 0, 1, 0, 1, ],
                 vec![ 1, 1, 1, 1, 1, ],
             ],
-            fox_holes: vec![ FoxHole { entry: GridPosition { column: 1, row: 2 }, exit: GridPosition { column: 2, row: 1 }, used: false } ],
-            wolves: vec![ Wolf { pos: GridPosition { column: 2, row: 4 }} ],
+            fox_holes: vec![ FoxHole::new(GridPosition { column: 1, row: 2 }, GridPosition { column: 2, row: 1 }, None), ],
+            wolves: vec![ Wolf::new(GridPosition { column: 2, row: 4 }) ],
         }
     }
 }

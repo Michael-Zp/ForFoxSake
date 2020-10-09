@@ -53,7 +53,7 @@ impl View
     {
         let program = sprites_helper::initialize_sprites_shader(&context)?;
         let tex = shader_utils::initialize_texture(context, texture_image, &program, true)?;
-        sprites_helper::set_tile_map_uniforms(context, &program, 2.0, 2.0)?;
+        sprites_helper::set_tile_map_uniforms(context, &program, 10.0, 10.0)?;
 
         Ok((program, tex))
     }

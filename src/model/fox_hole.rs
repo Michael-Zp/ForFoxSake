@@ -6,13 +6,16 @@ pub struct FoxHole<T>
     pub entry: T,
     pub exit: T,
     pub used: bool,
+    pub entry_sprite: i32,
+    pub exit_sprite: i32,
+    pub closed_sprite: i32,
 }
 
 impl<T> FoxHole<T>
 {
     pub fn new(entry: T, exit: T, used: Option<bool>) -> FoxHole<T>
     {
-        FoxHole { entry: entry, exit: exit, used: used.unwrap_or(false)}
+        FoxHole { entry: entry, exit: exit, used: used.unwrap_or(false), entry_sprite: 12, exit_sprite: 12, closed_sprite: 13, }
     }
 }
 
@@ -24,6 +27,6 @@ impl FoxHole<GridPosition>
         let entry_pos = grid_to_position(&grid_hole.entry, width, height);
         let exit_pos = grid_to_position(&grid_hole.exit, width, height);
 
-        FoxHole{ entry: entry_pos, exit: exit_pos, used: false }
+        FoxHole::new(entry_pos, exit_pos, None)
     }
 }

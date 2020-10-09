@@ -9,10 +9,12 @@ use fox_hole::{FoxHole};
 mod model_utils;
 mod wolf;
 use wolf::Wolf;
+mod fox;
+use fox::Fox;
 
 pub struct Model
 {
-    player_pos: cgmath::Vector2<f32>,
+    player: Fox,
     fox_holes: std::vec::Vec<FoxHole<cgmath::Vector2<f32>>>,
     wolves: std::vec::Vec<Wolf<cgmath::Vector2<f32>>>,
     alive: bool,
@@ -34,7 +36,7 @@ impl Model
     pub fn new() -> Result<Model, String>
     {
         Ok(Model{ 
-            player_pos: cgmath::Vector2 { x: 0.0, y: 0.0 },
+            player: Fox::new(cgmath::Vector2 { x: 0.0, y: 0.0 }),
             fox_holes: std::vec::Vec::new(),
             wolves: std::vec::Vec::new(),
             alive: true,
@@ -52,22 +54,22 @@ impl Model
 
         for hole in self.fox_holes.iter()
         {
-            add_sprite!(0.2, 0.2, hole.entry, 1, sprite_sizes, sprite_positions, sprite_tile_map_indices, current_index);
-            add_sprite!(0.2, 0.2, hole.exit, 1, sprite_sizes, sprite_positions, sprite_tile_map_indices, current_index);
+            add_sprite!(0.2, 0.2, hole.entry, hole.entry_sprite, sprite_sizes, sprite_positions, sprite_tile_map_indices, current_index);
+            add_sprite!(0.2, 0.2, hole.exit, hole.exit_sprite, sprite_sizes, sprite_positions, sprite_tile_map_indices, current_index);
 
             if hole.used
             {
-                add_sprite!(0.15, 0.15, hole.entry, 2, sprite_sizes, sprite_positions, sprite_tile_map_indices, current_index);
-                add_sprite!(0.15, 0.15, hole.exit, 2, sprite_sizes, sprite_positions, sprite_tile_map_indices, current_index);
+                add_sprite!(0.15, 0.15, hole.entry, hole.closed_sprite, sprite_sizes, sprite_positions, sprite_tile_map_indices, current_index);
+                add_sprite!(0.15, 0.15, hole.exit, hole.closed_sprite, sprite_sizes, sprite_positions, sprite_tile_map_indices, current_index);
             }
         }
 
         for wolf in self.wolves.iter()
         {
-            add_sprite!(0.2, 0.2, wolf.pos, 3, sprite_sizes, sprite_positions, sprite_tile_map_indices, current_index);
+            add_sprite!(0.2, 0.2, wolf.pos, wolf.sprite, sprite_sizes, sprite_positions, sprite_tile_map_indices, current_index);
         }
 
-        add_sprite!(0.2, 0.2, self.player_pos, 0, sprite_sizes, sprite_positions, sprite_tile_map_indices, current_index);
+        add_sprite!(0.2, 0.2, self.player.pos, self.player.sprite, sprite_sizes, sprite_positions, sprite_tile_map_indices, current_index);
 
         SpritesViewModel {
             sprite_sizes: sprite_sizes,
@@ -99,7 +101,7 @@ impl Model
             }
         }
 
-        self.player_pos = model_utils::grid_to_position(level.get_start_pos(), width, height);
+        self.player.pos = model_utils::grid_to_position(level.get_start_pos(), width, height);
 
         for hole in level.get_fox_holes().iter()
         {
@@ -122,24 +124,30 @@ impl Model
     {
         const SPEED: f32 = 0.2;
 
-        if input.is_input_down("MoveLeft") || input.is_input_pressed("MoveLeft")
-        {
-            self.player_pos.x -= SPEED * delta_time;
-        }
-        
-        if input.is_input_down("MoveRight") || input.is_input_pressed("MoveRight")
-        {
-            self.player_pos.x += SPEED * delta_time;
-        }
+        let move_left = input.is_input_down("MoveLeft") || input.is_input_pressed("MoveLeft");
+        let move_right = input.is_input_down("MoveRight") || input.is_input_pressed("MoveRight");
+        let move_down = input.is_input_down("MoveDown") || input.is_input_pressed("MoveDown");
+        let move_up = input.is_input_down("MoveUp") || input.is_input_pressed("MoveUp");
 
-        if input.is_input_down("MoveDown") || input.is_input_pressed("MoveDown")
+        if move_left && !move_right
         {
-            self.player_pos.y -= SPEED * delta_time;
+            self.player.pos.x -= SPEED * delta_time;
+            self.player.set_move_left_sprite();
+        } 
+        else if move_right && !move_left
+        {
+            self.player.pos.x += SPEED * delta_time;
+            self.player.set_move_right_sprite();
+        } 
+        else if move_down && !move_up
+        {
+            self.player.pos.y -= SPEED * delta_time;
+            self.player.set_move_down_sprite();
         }
-
-        if input.is_input_down("MoveUp") || input.is_input_pressed("MoveUp")
+        else if move_up && !move_down
         {
-            self.player_pos.y += SPEED * delta_time;
+            self.player.pos.y += SPEED * delta_time;
+            self.player.set_move_up_sprite();
         }
     }
 
@@ -154,9 +162,9 @@ impl Model
                     continue;
                 }
 
-                if (self.player_pos - hole.entry).magnitude() < 0.1
+                if (self.player.pos - hole.entry).magnitude() < 0.1
                 {
-                    self.player_pos = hole.exit;
+                    self.player.pos = hole.exit;
                     hole.used = true;
                 }
             }
@@ -167,7 +175,7 @@ impl Model
     {
         for wolf in &mut self.wolves
         {
-            if (self.player_pos - wolf.pos).magnitude() < 0.15
+            if (self.player.pos - wolf.pos).magnitude() < 0.15
             {
                 self.alive = false;
             }
