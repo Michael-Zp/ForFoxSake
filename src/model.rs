@@ -69,7 +69,7 @@ impl Model
             add_sprite!(0.2, 0.2, wolf.pos, wolf.sprite, sprite_sizes, sprite_positions, sprite_tile_map_indices, current_index);
         }
 
-        add_sprite!(0.2, 0.2, self.player.pos, self.player.sprite, sprite_sizes, sprite_positions, sprite_tile_map_indices, current_index);
+        add_sprite!(0.2, 0.2, self.player.pos, self.player.get_sprite(), sprite_sizes, sprite_positions, sprite_tile_map_indices, current_index);
 
         SpritesViewModel {
             sprite_sizes: sprite_sizes,
@@ -132,22 +132,22 @@ impl Model
         if move_left && !move_right
         {
             self.player.pos.x -= SPEED * delta_time;
-            self.player.set_move_left_sprite();
+            self.player.update_animation(Fox::MOVE_LEFT, delta_time);
         } 
         else if move_right && !move_left
         {
             self.player.pos.x += SPEED * delta_time;
-            self.player.set_move_right_sprite();
+            self.player.update_animation(Fox::MOVE_RIGHT, delta_time);
         } 
         else if move_down && !move_up
         {
             self.player.pos.y -= SPEED * delta_time;
-            self.player.set_move_down_sprite();
+            self.player.update_animation(Fox::MOVE_DOWN, delta_time);
         }
         else if move_up && !move_down
         {
             self.player.pos.y += SPEED * delta_time;
-            self.player.set_move_up_sprite();
+            self.player.update_animation(Fox::MOVE_UP, delta_time);
         }
     }
 
