@@ -1,24 +1,29 @@
-use crate::model::model_utils;
+use crate::model::model_utils::{GridPosition, grid_to_position};
+use cgmath;
 
-pub struct FoxHoleInGrid
+pub struct FoxHole<T>
 {
-    pub entry: model_utils::GridPosition,
-    pub exit: model_utils::GridPosition,
+    pub entry: T,
+    pub exit: T,
+    pub used: bool,
 }
 
-pub struct FoxHoleWithPosition
+impl<T> FoxHole<T>
 {
-    pub entry: cgmath::Vector2<f32>,
-    pub exit: cgmath::Vector2<f32>,
-}
-
-impl FoxHoleWithPosition
-{
-    pub fn from(grid_hole: &FoxHoleInGrid, width: f32, height: f32) -> FoxHoleWithPosition
+    pub fn new(entry: T, exit: T, used: Option<bool>) -> FoxHole<T>
     {
-        let entry_pos = model_utils::grid_to_position(&grid_hole.entry, width, height);
-        let exit_pos = model_utils::grid_to_position(&grid_hole.exit, width, height);
+        FoxHole { entry: entry, exit: exit, used: used.unwrap_or(false)}
+    }
+}
 
-        FoxHoleWithPosition{ entry: entry_pos, exit: exit_pos }
+
+impl FoxHole<GridPosition>
+{
+    pub fn from(grid_hole: &FoxHole<GridPosition>, width: f32, height: f32) -> FoxHole<cgmath::Vector2<f32>>
+    {
+        let entry_pos = grid_to_position(&grid_hole.entry, width, height);
+        let exit_pos = grid_to_position(&grid_hole.exit, width, height);
+
+        FoxHole{ entry: entry_pos, exit: exit_pos, used: false }
     }
 }

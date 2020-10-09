@@ -19,6 +19,8 @@ lazy_static::lazy_static!
         (68, format!("MoveRight")),
         (83, format!("MoveDown")),
         (65, format!("MoveLeft")),
+        (69, format!("Use")),
+        (32, format!("Use")),
     ].iter().cloned().collect();
 }
 
@@ -42,17 +44,15 @@ impl Input
 {
     pub fn new() -> Input
     {
-        let mut keys_pressed : std::collections::HashMap<String, i8> = std::collections::HashMap::new();
-        keys_pressed.insert(format!("MoveUp"), 0);
-        keys_pressed.insert(format!("MoveRight"), 0);
-        keys_pressed.insert(format!("MoveDown"), 0);
-        keys_pressed.insert(format!("MoveLeft"), 0);
-        
+
+        let mut keys_pressed : std::collections::HashMap<String, i8> = std::collections::HashMap::new();        
         let mut keys_pressed_last_frame : std::collections::HashMap<String, i8> = std::collections::HashMap::new();
-        keys_pressed_last_frame.insert(format!("MoveUp"), 0);
-        keys_pressed_last_frame.insert(format!("MoveRight"), 0);
-        keys_pressed_last_frame.insert(format!("MoveDown"), 0);
-        keys_pressed_last_frame.insert(format!("MoveLeft"), 0);
+
+        for (_, v) in KEY_MAP.iter()
+        {
+            keys_pressed.insert(v.clone(), 0);    
+            keys_pressed_last_frame.insert(v.clone(), 0);        
+        }
 
         let keys_already_pressed : std::collections::HashMap<i32, bool> = std::collections::HashMap::new();
 

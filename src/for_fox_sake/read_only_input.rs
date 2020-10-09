@@ -14,18 +14,18 @@ impl<'a> ReadOnlyInput<'a>
         }
     }
 
-    pub fn is_input_down(&self, input_string: &String) -> bool
+    pub fn is_input_down(&self, input_string: &str) -> bool
     {
-        self.input.is_input_pressed_this_frame(input_string) && !self.input.is_input_pressed_last_frame(input_string)
+        self.input.is_input_pressed_this_frame(&format!("{}", input_string)) && !self.input.is_input_pressed_last_frame(&format!("{}", input_string))
     }
 
-    pub fn is_input_pressed(&self, input_string: &String) -> bool
+    pub fn is_input_pressed(&self, input_string: &str) -> bool
     {
-        self.input.is_input_pressed_this_frame(input_string) && self.input.is_input_pressed_last_frame(input_string)
+        self.input.is_input_pressed_this_frame(&format!("{}", input_string)) && self.input.is_input_pressed_last_frame(&format!("{}", input_string))
     }
 
-    pub fn is_input_up(&self, input_string: &String) -> bool
+    pub fn is_input_up(&self, input_string: &str) -> bool
     {
-        !self.input.is_input_pressed_this_frame(input_string) && self.input.is_input_pressed_last_frame(input_string)
+        !self.input.is_input_pressed_this_frame(&format!("{}", input_string)) && self.input.is_input_pressed_last_frame(&format!("{}", input_string))
     }
 }

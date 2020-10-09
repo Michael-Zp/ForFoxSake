@@ -5,24 +5,42 @@ use cgmath::InnerSpace;
 pub mod level;
 
 mod fox_hole;
-use fox_hole::{FoxHoleWithPosition};
+use fox_hole::{FoxHole};
 mod model_utils;
+mod wolf;
+use wolf::Wolf;
 
 pub struct Model
 {
     player_pos: cgmath::Vector2<f32>,
-    fox_holes: std::vec::Vec<FoxHoleWithPosition>,
+    fox_holes: std::vec::Vec<FoxHole<cgmath::Vector2<f32>>>,
+    wolves: std::vec::Vec<Wolf<cgmath::Vector2<f32>>>,
+    alive: bool,
 }
 
-impl<'a> Model
+//Yes this is clunky with the identifiers at the back, but local variables are not supported by macros anymore
+//Could move the identifiers into model, but they don´t really fit there either...
+macro_rules! add_sprite {
+    ($x:expr, $y:expr, $pos:expr, $sprite:expr, $ss:ident, $sp:ident, $stmi:ident, $ci:ident) => {
+        $ss[$ci] = cgmath::Vector2{ x: $x, y: $y };
+        $sp[$ci] = $pos;
+        $stmi[$ci] = $sprite;
+        $ci = $ci + 1;
+    };
+}
+
+impl Model
 {
     pub fn new() -> Result<Model, String>
     {
         Ok(Model{ 
             player_pos: cgmath::Vector2 { x: 0.0, y: 0.0 },
             fox_holes: std::vec::Vec::new(),
+            wolves: std::vec::Vec::new(),
+            alive: true,
         })
     }
+
 
     pub fn to_sprites_view_model(&self) -> SpritesViewModel
     {
@@ -34,34 +52,22 @@ impl<'a> Model
 
         for hole in self.fox_holes.iter()
         {
-            sprite_sizes[current_index] = cgmath::Vector2{ x: 0.2, y: 0.2 };
-            sprite_positions[current_index] = hole.entry;
-            sprite_tile_map_indices[current_index] = 1;
-            current_index = current_index + 1;
-            
-            sprite_sizes[current_index] = cgmath::Vector2{ x: 0.2, y: 0.2 };
-            sprite_positions[current_index] = hole.exit;
-            sprite_tile_map_indices[current_index] = 1;
-            current_index = current_index + 1;
+            add_sprite!(0.2, 0.2, hole.entry, 1, sprite_sizes, sprite_positions, sprite_tile_map_indices, current_index);
+            add_sprite!(0.2, 0.2, hole.exit, 1, sprite_sizes, sprite_positions, sprite_tile_map_indices, current_index);
 
             if hole.used
             {
-                sprite_sizes[current_index] = cgmath::Vector2{ x: 0.15, y: 0.15 };
-                sprite_positions[current_index] = hole.entry;
-                sprite_tile_map_indices[current_index] = 2;
-                current_index = current_index + 1;
-                
-                sprite_sizes[current_index] = cgmath::Vector2{ x: 0.15, y: 0.15 };
-                sprite_positions[current_index] = hole.exit;
-                sprite_tile_map_indices[current_index] = 2;
-                current_index = current_index + 1;
+                add_sprite!(0.15, 0.15, hole.entry, 2, sprite_sizes, sprite_positions, sprite_tile_map_indices, current_index);
+                add_sprite!(0.15, 0.15, hole.exit, 2, sprite_sizes, sprite_positions, sprite_tile_map_indices, current_index);
             }
         }
 
-        sprite_sizes[current_index] = cgmath::Vector2{ x: 0.2, y: 0.2 };
-        sprite_positions[current_index] = self.player_pos;
-        sprite_tile_map_indices[current_index] = 0;
-        current_index = current_index + 1;
+        for wolf in self.wolves.iter()
+        {
+            add_sprite!(0.2, 0.2, wolf.pos, 3, sprite_sizes, sprite_positions, sprite_tile_map_indices, current_index);
+        }
+
+        add_sprite!(0.2, 0.2, self.player_pos, 0, sprite_sizes, sprite_positions, sprite_tile_map_indices, current_index);
 
         SpritesViewModel {
             sprite_sizes: sprite_sizes,
@@ -97,7 +103,12 @@ impl<'a> Model
 
         for hole in level.get_fox_holes().iter()
         {
-            self.fox_holes.push(FoxHoleWithPosition::from(hole, width, height));
+            self.fox_holes.push(FoxHole::from(hole, width, height));
+        }
+
+        for wolf in level.get_wolves().iter()
+        {
+            self.wolves.push(Wolf::from(wolf, width, height));
         }
 
         Ok(LevelViewModel {
@@ -152,9 +163,24 @@ impl<'a> Model
         }
     }
 
+    fn check_wolves(&mut self)
+    {
+        for wolf in &mut self.wolves
+        {
+            if (self.player_pos - wolf.pos).magnitude() < 0.15
+            {
+                self.alive = false;
+            }
+        }
+    }
+
     pub fn update(&mut self, input: ReadOnlyInput, delta_time: f32)
     {
-        self.check_fox_hole_usage(&input);
-        self.move_player(&input, delta_time);
+        if self.alive
+        {
+            self.check_fox_hole_usage(&input);
+            self.move_player(&input, delta_time);
+            self.check_wolves();
+        }
     }
 }

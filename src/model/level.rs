@@ -1,11 +1,13 @@
-use crate::model::fox_hole::{FoxHoleInGrid};
-use crate::model::model_utils::{GridPosition};
+use crate::model::fox_hole::FoxHole;
+use crate::model::model_utils::GridPosition;
+use crate::model::wolf::Wolf;
 
 pub struct Level
 {
     start_pos: GridPosition,
     data: std::vec::Vec<std::vec::Vec<i32>>,
-    fox_holes: std::vec::Vec<FoxHoleInGrid>,
+    fox_holes: std::vec::Vec<FoxHole<GridPosition>>,
+    wolves: std::vec::Vec<Wolf<GridPosition>>,
 }
 
 impl Level
@@ -20,9 +22,14 @@ impl Level
         &self.data
     }
 
-    pub fn get_fox_holes(&self) -> &std::vec::Vec<FoxHoleInGrid>
+    pub fn get_fox_holes(&self) -> &std::vec::Vec<FoxHole<GridPosition>>
     {
         &self.fox_holes
+    }
+    
+    pub fn get_wolves(&self) -> &std::vec::Vec<Wolf<GridPosition>>
+    {
+        &self.wolves
     }
 }
 
@@ -42,9 +49,10 @@ impl Levels
                 vec![ 1, 0, 1, 0, 1, ],
                 vec![ 1, 1, 1, 1, 1, ],
                 vec![ 1, 0, 1, 0, 1, ],
-                vec![ 1, 1, 3, 1, 1, ],
+                vec![ 1, 1, 1, 1, 1, ],
             ],
-            fox_holes: vec![ FoxHoleInGrid { entry: GridPosition { column: 1, row: 2 }, exit: GridPosition { column: 2, row: 1 } } ],
+            fox_holes: vec![ FoxHole { entry: GridPosition { column: 1, row: 2 }, exit: GridPosition { column: 2, row: 1 }, used: false } ],
+            wolves: vec![ Wolf { pos: GridPosition { column: 2, row: 4 }} ],
         }
     }
 }
