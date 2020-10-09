@@ -50,6 +50,9 @@ pub fn initialize_background_shader(context: &WebGl2RenderingContext) -> Result<
             float mapTile = row * width + col;
             float tileToUse = float(map[int(mapTile)]);
 
+            float isOddCol = step(0.5, mod(col, 2.0));
+            uv.x = isOddCol * (1.0 - uv.x) + (1.0 - isOddCol) * uv.x;
+
             float tileToUseCol = mod(tileToUse, tileMapWidth);
             float tileToUseRow = floor(tileToUse / tileMapHeight);
 
