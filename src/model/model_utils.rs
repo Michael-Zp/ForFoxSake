@@ -14,14 +14,14 @@ pub fn grid_to_position(grid_pos: &GridPosition, width: f32, height: f32) -> cgm
 }
 
 
-pub struct SpriteAnimation
+pub struct SpriteAnimationMetaData
 {
     pub from_index: i32,
     pub to_index: i32,
     pub timeout: f32,
 }
 
-impl std::fmt::Display for SpriteAnimation
+impl std::fmt::Display for SpriteAnimationMetaData
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
     {
