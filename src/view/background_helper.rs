@@ -2,7 +2,7 @@ use crate::view::shader_utils;
 
 use web_sys::{WebGl2RenderingContext, WebGlProgram};
 
-pub fn initialize_background_shader(context: &WebGl2RenderingContext) -> Result<WebGlProgram, String> 
+pub fn initialize_shader(context: &WebGl2RenderingContext) -> Result<WebGlProgram, String> 
 {
     let vert_shader = shader_utils::compile_shader(
         &context,
@@ -52,6 +52,9 @@ pub fn initialize_background_shader(context: &WebGl2RenderingContext) -> Result<
 
             float isOddCol = step(0.5, mod(col, 2.0));
             uv.x = isOddCol * (1.0 - uv.x) + (1.0 - isOddCol) * uv.x;
+            
+            float idOddRow = step(0.5, mod(row, 2.0));
+            uv.y = idOddRow * (1.0 - uv.y) + (1.0 - idOddRow) * uv.y;
 
             float tileToUseCol = mod(tileToUse, tileMapWidth);
             float tileToUseRow = floor(tileToUse / tileMapHeight);

@@ -3,7 +3,7 @@ use crate::view::shader_utils;
 use cgmath;
 use web_sys::{WebGl2RenderingContext, WebGlProgram};
 
-pub fn initialize_sprites_shader(context: &WebGl2RenderingContext) -> Result<WebGlProgram, String> 
+pub fn initialize_shader(context: &WebGl2RenderingContext) -> Result<WebGlProgram, String> 
 {
     let vert_shader = shader_utils::compile_shader(
         &context,
@@ -105,45 +105,21 @@ pub fn initialize_sprites_shader(context: &WebGl2RenderingContext) -> Result<Web
     );
 }
 
-fn update_sprite_uniform(context: &WebGl2RenderingContext, sprite_shader: &WebGlProgram, new_positions: [cgmath::Vector2<f32>;10], uniform_name: &str) -> Result<(), String>
+pub fn update_sizes(context: &WebGl2RenderingContext, shader: &WebGlProgram, new_sizes: [cgmath::Vector2<f32>;10]) -> Result<(), String>
 {
-    context.use_program(Some(sprite_shader));
-    let loc = context.get_uniform_location(sprite_shader, uniform_name).ok_or(format!("Failed to get location of {}", uniform_name))?;
-    let mut data : std::vec::Vec<f32> = std::vec::Vec::new();
-    for x in new_positions.iter()
-    {
-        data.push(x.x);
-        data.push(x.y);
-    }
-
-    context.uniform2fv_with_f32_array(Some(&loc), &data);
+    shader_utils::set_uniform2f_arr10(context, shader, new_sizes, "sizes")?;
     Ok(())
 }
 
-pub fn update_sprite_sizes(context: &WebGl2RenderingContext, sprite_shader: &WebGlProgram, new_sizes: [cgmath::Vector2<f32>;10]) -> Result<(), String>
+pub fn update_positions(context: &WebGl2RenderingContext, shader: &WebGlProgram, new_positions: [cgmath::Vector2<f32>;10]) -> Result<(), String>
 {
-    
-    update_sprite_uniform(context, sprite_shader, new_sizes, "sizes")?;
+    shader_utils::set_uniform2f_arr10(context, shader, new_positions, "positions")?;
     Ok(())
 }
 
-pub fn update_sprite_positions(context: &WebGl2RenderingContext, sprite_shader: &WebGlProgram, new_positions: [cgmath::Vector2<f32>;10]) -> Result<(), String>
-{
-    update_sprite_uniform(context, sprite_shader, new_positions, "positions")?;
-    Ok(())
-}
-
-pub fn update_sprite_tile_map_indices(context: &WebGl2RenderingContext, sprite_shader: &WebGlProgram, new_indices: [i32;10]) -> Result<(), String>
+pub fn update_tile_map_indices(context: &WebGl2RenderingContext, shader: &WebGlProgram, new_indices: [i32;10]) -> Result<(), String>
 {       
-    context.use_program(Some(sprite_shader));
-    let loc = context.get_uniform_location(sprite_shader, "tileMapIndices").ok_or("Failed to get location of tileMapIndices")?;
-    let mut data : std::vec::Vec<i32> = std::vec::Vec::new();
-    for x in new_indices.iter()
-    {
-        data.push(x.clone());
-    }
-
-    context.uniform1iv_with_i32_array(Some(&loc), &data);
+    shader_utils::set_uniform1i_arr10(context, shader, new_indices, "tileMapIndices")?;
     Ok(())
 }
 

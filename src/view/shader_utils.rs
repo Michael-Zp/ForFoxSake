@@ -78,6 +78,37 @@ pub fn set_uniform2f(context: &WebGl2RenderingContext, program: &WebGlProgram, d
     Ok(())
 }
 
+pub fn set_uniform1i_arr10(context: &WebGl2RenderingContext, shader: &WebGlProgram, data: [i32;10], uniform_name: &str) -> Result<(), String>
+{
+    context.use_program(Some(shader));
+    let loc = context.get_uniform_location(shader, uniform_name).ok_or(format!("Failed to get location of {}", uniform_name))?;
+    context.uniform1iv_with_i32_array(Some(&loc), &data.to_vec());
+    Ok(())
+}
+
+pub fn set_uniform1f_arr10(context: &WebGl2RenderingContext, shader: &WebGlProgram, data: [f32;10], uniform_name: &str) -> Result<(), String>
+{
+    context.use_program(Some(shader));
+    let loc = context.get_uniform_location(shader, uniform_name).ok_or(format!("Failed to get location of {}", uniform_name))?;
+    context.uniform1fv_with_f32_array(Some(&loc), &data.to_vec());
+    Ok(())
+}
+
+pub fn set_uniform2f_arr10(context: &WebGl2RenderingContext, shader: &WebGlProgram, vec2_data: [cgmath::Vector2<f32>;10], uniform_name: &str) -> Result<(), String>
+{
+    context.use_program(Some(shader));
+    let loc = context.get_uniform_location(shader, uniform_name).ok_or(format!("Failed to get location of {}", uniform_name))?;
+    let mut data : std::vec::Vec<f32> = std::vec::Vec::new();
+    for x in vec2_data.iter()
+    {
+        data.push(x.x);
+        data.push(x.y);
+    }
+
+    context.uniform2fv_with_f32_array(Some(&loc), &data);
+    Ok(())
+}
+
 pub fn initialize_texture(context: &WebGl2RenderingContext, texture: image::RgbaImage, program: &WebGlProgram, linear: bool) -> Result<WebGlTexture, String>
 {
     context.use_program(Some(program));

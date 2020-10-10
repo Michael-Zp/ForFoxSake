@@ -1,5 +1,5 @@
 use crate::for_fox_sake::read_only_input::ReadOnlyInput;
-use crate::view_models::{LevelViewModel, SpritesViewModel};
+use crate::view_models::{LevelViewModel, SpritesViewModel, ParticlesViewModel};
 use cgmath;
 use cgmath::InnerSpace;
 pub mod level;
@@ -13,12 +13,15 @@ mod fox;
 use fox::Fox;
 mod animation_trait;
 use animation_trait::SpriteAnimation;
+mod particle_system;
+use particle_system::ParticleSystemMetaData;
 
 pub struct Model
 {
     player: Fox,
     fox_holes: std::vec::Vec<FoxHole<cgmath::Vector2<f32>>>,
     wolves: std::vec::Vec<Wolf<cgmath::Vector2<f32>>>,
+    particle_systems: std::vec::Vec<ParticleSystemMetaData>,
     alive: bool,
 }
 
@@ -32,6 +35,15 @@ macro_rules! add_sprite {
         $ci = $ci + 1;
     };
 }
+macro_rules! add_particle_effect {
+    ($pos:expr, $max_speed:expr, $time_passed:expr, $max_running_time:expr, $psp:ident, $psms:ident, $pstp:ident, $psmrt:ident, $ci:ident) => {
+        $psp[$ci] = $pos;
+        $psms[$ci] = $max_speed;
+        $pstp[$ci] = $time_passed;
+        $psmrt[$ci] = $max_running_time;
+        $ci = $ci + 1;
+    };
+}
 
 impl Model
 {
@@ -41,6 +53,7 @@ impl Model
             player: Fox::new(cgmath::Vector2 { x: 0.0, y: 0.0 }),
             fox_holes: std::vec::Vec::new(),
             wolves: std::vec::Vec::new(),
+            particle_systems: std::vec::Vec::new(),
             alive: true,
         })
     }
@@ -74,10 +87,35 @@ impl Model
         add_sprite!(0.2, 0.2, self.player.pos, self.player.get_sprite(), sprite_sizes, sprite_positions, sprite_tile_map_indices, current_index);
 
         SpritesViewModel {
-            sprite_sizes: sprite_sizes,
-            sprite_positions: sprite_positions,
-            sprite_tile_map_indices: sprite_tile_map_indices,
-            sprite_count: current_index as i32,
+            sizes: sprite_sizes,
+            positions: sprite_positions,
+            tile_map_indices: sprite_tile_map_indices,
+            count: current_index as i32,
+        }
+    }
+
+    
+    pub fn to_particles_view_model(&self) -> ParticlesViewModel
+    {
+        let mut positions: [cgmath::Vector2<f32>;10] = [cgmath::Vector2{ x: 0.0, y: 0.0 };10];
+        let mut max_speeds: [f32;10] = [0.0;10];
+        let mut running_times: [f32;10] = [0.0;10];
+        let mut max_running_times: [f32;10] = [0.0;10];
+
+        let mut current_index = 0;
+
+        for system in self.particle_systems.iter()
+        {
+            add_particle_effect!(system.position, system.max_speed, system.running_time, system.max_running_time, positions, max_speeds, running_times, max_running_times, current_index);
+        }
+        
+
+        ParticlesViewModel {
+            positions: positions,
+            max_speeds: max_speeds,
+            running_times: running_times,
+            max_running_times: max_running_times,
+            count: current_index as i32,
         }
     }
 
@@ -122,6 +160,16 @@ impl Model
         })
     }
 
+    fn spawn_fox_hole_entry_particle_system(&mut self, start_position: cgmath::Vector2<f32>)
+    {
+        self.particle_systems.push(ParticleSystemMetaData{
+            position: start_position,
+            max_speed: 0.1,
+            running_time: 0.0,
+            max_running_time: 3.0,
+        });
+    }
+
     fn move_player(&mut self, input: &ReadOnlyInput, delta_time: f32)
     {
         const SPEED: f32 = 0.2;
@@ -155,6 +203,7 @@ impl Model
 
     fn check_fox_hole_usage(&mut self, input: &ReadOnlyInput)
     {
+        let mut used_entry_position: Option<cgmath::Vector2<f32>> = None;
         if input.is_input_down("Use") || input.is_input_pressed("Use")
         {
             for hole in &mut self.fox_holes
@@ -168,8 +217,14 @@ impl Model
                 {
                     self.player.pos = hole.exit;
                     hole.used = true;
+                    used_entry_position = Some(hole.entry);
                 }
             }
+        }
+
+        if let Some(pos) = used_entry_position
+        {
+            self.spawn_fox_hole_entry_particle_system(pos);
         }
     }
 
@@ -184,6 +239,16 @@ impl Model
         }
     }
 
+    fn update_particle_systems(&mut self, delta_time: f32)
+    {
+        for system in self.particle_systems.iter_mut()
+        {
+            system.running_time = system.running_time + delta_time;
+        }
+
+        self.particle_systems.retain(|x| x.running_time < x.max_running_time);
+    }
+
     pub fn update(&mut self, input: ReadOnlyInput, delta_time: f32)
     {
         if self.alive
@@ -191,6 +256,7 @@ impl Model
             self.check_fox_hole_usage(&input);
             self.move_player(&input, delta_time);
             self.check_wolves();
+            self.update_particle_systems(delta_time);
         }
     }
 }

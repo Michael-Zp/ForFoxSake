@@ -41,10 +41,14 @@ impl ForFoxSake
     {
         let read_only_input = ReadOnlyInput::new(&self.input);
         self.model.update(read_only_input, delta_time);
-        match self.view.update(&self.context, self.model.to_sprites_view_model())
+        match self.view.update(&self.context, self.model.to_sprites_view_model(), self.model.to_particles_view_model())
         {
             Ok(_) => (),
-            Err(err_msg) => panic!(err_msg),
+            Err(err_msg) => 
+            {
+                web_sys::console::log_1(&format!("{}", err_msg).into());
+                panic!(err_msg);
+            },
         };
         self.input.finalize();
     }
