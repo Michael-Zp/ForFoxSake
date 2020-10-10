@@ -11,6 +11,8 @@ mod wolf;
 use wolf::Wolf;
 mod fox;
 use fox::Fox;
+mod animation_trait;
+use animation_trait::SpriteAnimation;
 
 pub struct Model
 {
