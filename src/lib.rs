@@ -58,7 +58,7 @@ impl FoxGame
     
         let tile_map = image::load_from_memory_with_format(&tile_map_raw_data, image::ImageFormat::Bmp).unwrap().to_rgba();
         let sprite_tile_map = image::load_from_memory_with_format(&sprite_tile_map_raw_data, image::ImageFormat::Bmp).unwrap().to_rgba();
-        let game = for_fox_sake::ForFoxSake::new(context, tile_map, sprite_tile_map)?;
+        let game = for_fox_sake::ForFoxSake::new(context, tile_map, sprite_tile_map, canvas_width, canvas_height)?;
 
 
         Ok(FoxGame {

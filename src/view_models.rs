@@ -23,3 +23,30 @@ pub struct ParticlesViewModel
     pub max_running_times: [f32;10],
     pub count: i32
 }
+
+pub struct PostProcessEffect
+{
+    pub name: PostProcessEffects,
+    pub running_time: f32,
+    pub max_running_time: f32,
+}
+
+pub struct PostProcessViewModel
+{
+    pub effects: std::vec::Vec<PostProcessEffect>,
+}
+
+#[derive(Copy, Clone, Hash)]
+pub enum PostProcessEffects
+{
+    VIGNETTE = 0,
+}
+
+impl PartialEq for PostProcessEffects
+{
+    fn eq(&self, other: &Self) -> bool {
+        self == other
+    }
+}
+
+impl std::cmp::Eq for PostProcessEffects { }

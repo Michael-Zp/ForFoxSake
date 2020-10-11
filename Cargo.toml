@@ -52,6 +52,7 @@ features = [
     'WebGlShader',
     'WebGlTexture',
     'WebGlVertexArrayObject',
+    'WebGlFramebuffer',
     'FileReader',
     'Blob',
     'Window',

@@ -15,9 +15,9 @@ pub trait SpriteAnimation
     {
         if animation_name == self.get_current_animation()
         {
-            self.set_animation_time(self.get_animation_time() + delta_time);
             let animation = self.get_sprite_animations().get(&self.get_current_animation()).unwrap();
-            self.set_animation_time(self.get_animation_time() % ((animation.to_index - animation.from_index) as f32 * animation.timeout));
+            let max_time = (animation.to_index - animation.from_index) as f32 * animation.timeout;
+            self.set_animation_time((self.get_animation_time() + delta_time) % max_time);
         }
         else
         {

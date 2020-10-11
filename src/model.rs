@@ -1,5 +1,5 @@
 use crate::for_fox_sake::read_only_input::ReadOnlyInput;
-use crate::view_models::{LevelViewModel, SpritesViewModel, ParticlesViewModel};
+use crate::view_models::{LevelViewModel, SpritesViewModel, ParticlesViewModel, PostProcessViewModel, PostProcessEffect, PostProcessEffects};
 use cgmath;
 use cgmath::InnerSpace;
 pub mod level;
@@ -15,6 +15,8 @@ mod animation_trait;
 use animation_trait::SpriteAnimation;
 mod particle_system;
 use particle_system::ParticleSystemMetaData;
+mod post_process_effect_meta_data;
+use post_process_effect_meta_data::PostProcessEffectMetaData;
 
 pub struct Model
 {
@@ -22,6 +24,7 @@ pub struct Model
     fox_holes: std::vec::Vec<FoxHole<cgmath::Vector2<f32>>>,
     wolves: std::vec::Vec<Wolf<cgmath::Vector2<f32>>>,
     particle_systems: std::vec::Vec<ParticleSystemMetaData>,
+    post_process_effects: std::vec::Vec<PostProcessEffectMetaData>,
     alive: bool,
 }
 
@@ -54,6 +57,7 @@ impl Model
             fox_holes: std::vec::Vec::new(),
             wolves: std::vec::Vec::new(),
             particle_systems: std::vec::Vec::new(),
+            post_process_effects: std::vec::Vec::new(),
             alive: true,
         })
     }
@@ -119,6 +123,24 @@ impl Model
         }
     }
 
+    pub fn to_post_process_view_model(&self) -> PostProcessViewModel
+    {
+        let mut post_process_effects: std::vec::Vec<PostProcessEffect> = std::vec::Vec::new();
+
+        for effect in self.post_process_effects.iter()
+        {
+            post_process_effects.push( PostProcessEffect {
+                name: effect.name,
+                running_time: effect.running_time,
+                max_running_time: effect.max_running_time,
+            });
+        }
+
+        PostProcessViewModel { 
+            effects: post_process_effects
+        }
+    }
+
     pub fn load_level(&mut self, level_code: u8) -> Result<LevelViewModel, String>
     {
         let level = match level_code
@@ -167,6 +189,15 @@ impl Model
             max_speed: 0.1,
             running_time: 0.0,
             max_running_time: 3.0,
+        });
+    }
+
+    fn spawn_fox_hole_entry_post_process_effect(&mut self)
+    {
+        self.post_process_effects.push(PostProcessEffectMetaData{ 
+            name: PostProcessEffects::VIGNETTE,
+            running_time: 0.0,
+            max_running_time: 1.5,
         });
     }
 
@@ -225,6 +256,7 @@ impl Model
         if let Some(pos) = used_entry_position
         {
             self.spawn_fox_hole_entry_particle_system(pos);
+            self.spawn_fox_hole_entry_post_process_effect();
         }
     }
 
@@ -249,6 +281,16 @@ impl Model
         self.particle_systems.retain(|x| x.running_time < x.max_running_time);
     }
 
+    fn update_post_process_effects(&mut self, delta_time: f32)
+    {
+        for effect in self.post_process_effects.iter_mut()
+        {
+            effect.running_time = effect.running_time + delta_time;
+        }
+
+        self.post_process_effects.retain(|x| x.running_time < x.max_running_time);
+    }
+
     pub fn update(&mut self, input: ReadOnlyInput, delta_time: f32)
     {
         if self.alive
@@ -257,6 +299,7 @@ impl Model
             self.move_player(&input, delta_time);
             self.check_wolves();
             self.update_particle_systems(delta_time);
+            self.update_post_process_effects(delta_time);
         }
     }
 }

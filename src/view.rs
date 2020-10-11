@@ -2,8 +2,9 @@ mod shader_utils;
 mod background_helper;
 mod sprites_helper;
 mod particles_helper;
+mod post_process_effect;
 
-use crate::view_models::{SpritesViewModel, LevelViewModel, ParticlesViewModel};
+use crate::view_models::{SpritesViewModel, LevelViewModel, ParticlesViewModel, PostProcessViewModel, PostProcessEffects};
 
 use image;
 use cgmath;
@@ -11,6 +12,8 @@ use web_sys::{WebGlProgram, WebGl2RenderingContext, WebGlTexture, WebGlVertexArr
 
 pub struct View 
 {
+    render_texture: WebGlTexture,
+
     background_shader: WebGlProgram,
     background_vao: WebGlVertexArrayObject,
     background_triangle_count: i32,
@@ -22,17 +25,24 @@ pub struct View
 
     particles_shader: WebGlProgram,
     particle_systems_count: i32,
+
+    post_process_effect_shaders: std::collections::HashMap<PostProcessEffects, WebGlProgram>,
+    post_process_effects: std::vec::Vec<Box<dyn post_process_effect::effect::Effect>>,
 }
 
 impl View
 {
-    pub fn new(context: &WebGl2RenderingContext, tile_map: image::RgbaImage, sprite_tile_map: image::RgbaImage) -> Result<View, String>
+    pub fn new(context: &WebGl2RenderingContext, tile_map: image::RgbaImage, sprite_tile_map: image::RgbaImage, width: i32, height: i32) -> Result<View, String>
     {
         let background = View::init_background(context, tile_map)?;
         let sprites = View::init_sprite_renderer(context, sprite_tile_map)?;
         let particles = View::init_particles_renderer(context)?;
         
-        Ok(View{
+        let render_texture = View::init_render_texture(context, width, height)?;
+        
+        let mut view = View {
+            render_texture: render_texture,
+
             background_shader: background.0,
             background_vao: background.1,
             background_triangle_count: background.2,
@@ -44,7 +54,14 @@ impl View
 
             particles_shader: particles,
             particle_systems_count: 0,
-        })
+
+            post_process_effect_shaders: std::collections::HashMap::new(),
+            post_process_effects: std::vec::Vec::new(),
+        };
+
+        view.init_post_process_shaders(context)?;
+
+        Ok(view)
     }
 
     fn init_background(context: &WebGl2RenderingContext, tile_map: image::RgbaImage) -> Result<(WebGlProgram, WebGlVertexArrayObject, i32, WebGlTexture), String>
@@ -70,6 +87,56 @@ impl View
     {
         let program = particles_helper::initialize_shader(context)?;
         Ok(program)
+    }
+
+    fn init_render_texture(context: &WebGl2RenderingContext, width: i32, height: i32) -> Result<WebGlTexture, String>
+    {
+        let tex = context.create_texture().ok_or("failed to create texture")?;
+    
+        context.bind_texture(WebGl2RenderingContext::TEXTURE_2D, Some(&tex));
+        context.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_WRAP_S, WebGl2RenderingContext::CLAMP_TO_EDGE as i32);
+        context.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_WRAP_T, WebGl2RenderingContext::CLAMP_TO_EDGE as i32);
+        context.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MIN_FILTER, WebGl2RenderingContext::NEAREST as i32);
+        context.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MAG_FILTER, WebGl2RenderingContext::NEAREST as i32);
+        
+        context.bind_texture(WebGl2RenderingContext::TEXTURE_2D, Some(&tex));
+        match context.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_array_buffer_view(
+            WebGl2RenderingContext::TEXTURE_2D,
+            0,
+            WebGl2RenderingContext::RGBA as i32,
+            width,
+            height,
+            0,
+            WebGl2RenderingContext::RGBA,
+            WebGl2RenderingContext::UNSIGNED_BYTE,
+            None
+            )
+        {
+            Ok(x) => Ok(x),
+            Err(_) => Err("failed to initialize render texture"),
+        }?;
+
+        context.framebuffer_texture_2d(WebGl2RenderingContext::FRAMEBUFFER, WebGl2RenderingContext::COLOR_ATTACHMENT0, WebGl2RenderingContext::TEXTURE_2D, Some(&tex), 0);
+
+        unsafe
+        {
+            let draw_buffer = js_sys::Uint32Array::view(&[WebGl2RenderingContext::COLOR_ATTACHMENT0]);
+            context.draw_buffers(draw_buffer.as_ref());
+        }
+
+        Ok(tex)
+    }
+
+    fn init_post_process_shaders(&mut self, context: &WebGl2RenderingContext) -> Result<(), String>
+    {
+        let all_effects = vec![ PostProcessEffects::VIGNETTE ];
+
+        for effect in all_effects.iter()
+        {
+            self.post_process_effect_shaders.insert(*effect, post_process_effect::get_shader_by_type(context, effect)?);
+        }
+
+        Ok(())
     }
     
     fn render_background(&self, context: &WebGl2RenderingContext)
@@ -112,6 +179,14 @@ impl View
         );
     }
 
+    fn apply_post_process_effects(&self, context: &WebGl2RenderingContext)
+    {
+        for effect in self.post_process_effects.iter()
+        {
+            effect.apply(context, &self.render_texture, self.post_process_effect_shaders.get(&effect.get_effect_type()).unwrap());
+        }
+    }
+
     fn clear_screen(&self, context: &WebGl2RenderingContext)
     {
         context.clear_color(0.0, 0.0, 0.0, 1.0);
@@ -131,29 +206,40 @@ impl View
         Ok(())
     }
 
-    pub fn update_sprites(&mut self, context: &WebGl2RenderingContext, new_sprites: SpritesViewModel) -> Result<(), String>
+    pub fn update_sprites(&mut self, context: &WebGl2RenderingContext, updated_sprites: SpritesViewModel) -> Result<(), String>
     {
-        sprites_helper::update_sizes(context, &self.sprite_shader, new_sprites.sizes)?;
-        sprites_helper::update_positions(context, &self.sprite_shader, new_sprites.positions)?;
-        sprites_helper::update_tile_map_indices(context, &self.sprite_shader, new_sprites.tile_map_indices)?;
-        self.sprite_count = new_sprites.count;
+        sprites_helper::update_sizes(context, &self.sprite_shader, updated_sprites.sizes)?;
+        sprites_helper::update_positions(context, &self.sprite_shader, updated_sprites.positions)?;
+        sprites_helper::update_tile_map_indices(context, &self.sprite_shader, updated_sprites.tile_map_indices)?;
+        self.sprite_count = updated_sprites.count;
         Ok(())
     }
 
-    pub fn update_particle_systems(&mut self, context: &WebGl2RenderingContext, new_particles: ParticlesViewModel) -> Result<(), String>
+    pub fn update_particle_systems(&mut self, context: &WebGl2RenderingContext, updated_particles: ParticlesViewModel) -> Result<(), String>
     {
-        particles_helper::update_positions(context, &self.particles_shader, new_particles.positions)?;
-        particles_helper::update_max_speeds(context, &self.particles_shader, new_particles.max_speeds)?;
-        particles_helper::update_running_times(context, &self.particles_shader, new_particles.running_times)?;
-        particles_helper::update_max_running_times(context, &self.particles_shader, new_particles.max_running_times)?;
-        self.particle_systems_count = new_particles.count;
+        particles_helper::update_positions(context, &self.particles_shader, updated_particles.positions)?;
+        particles_helper::update_max_speeds(context, &self.particles_shader, updated_particles.max_speeds)?;
+        particles_helper::update_running_times(context, &self.particles_shader, updated_particles.running_times)?;
+        particles_helper::update_max_running_times(context, &self.particles_shader, updated_particles.max_running_times)?;
+        self.particle_systems_count = updated_particles.count;
+        Ok(())
+    }
+    
+    pub fn update_post_process_effects(&mut self, updated_post_process_effects: PostProcessViewModel) -> Result<(), String>
+    {
+        self.post_process_effects.clear();
+        for effect in updated_post_process_effects.effects.iter()
+        {
+            self.post_process_effects.push(post_process_effect::get_effect_by_type(PostProcessEffects::VIGNETTE, effect.running_time, effect.max_running_time));
+        }
         Ok(())
     }
 
-    pub fn update(&mut self, context: &WebGl2RenderingContext, sprites: SpritesViewModel, particles: ParticlesViewModel) -> Result<(), String>
+    pub fn update(&mut self, context: &WebGl2RenderingContext, sprites: SpritesViewModel, particles: ParticlesViewModel, post_process_effects: PostProcessViewModel) -> Result<(), String>
     {
         self.update_sprites(context, sprites)?;
         self.update_particle_systems(context, particles)?;
+        self.update_post_process_effects(post_process_effects)?;
         Ok(())
     }
 
@@ -163,5 +249,6 @@ impl View
         self.render_background(context);
         self.render_sprites(context);
         self.render_particles(context);
+        self.apply_post_process_effects(context);
     }
 }
